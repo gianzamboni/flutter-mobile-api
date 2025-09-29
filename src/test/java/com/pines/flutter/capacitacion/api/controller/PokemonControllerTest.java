@@ -98,13 +98,13 @@ class PokemonControllerTest {
     }
 
     @Test
-    @DisplayName("Should return all Pokemon when repository has data")
-    void getAllPokemon_WhenDataExists_ShouldReturnAllPokemon() {
+    @DisplayName("Should return all Pokemon when no IDs provided and repository has data")
+    void getAllPokemon_WhenNoIdsProvidedAndDataExists_ShouldReturnAllPokemon() {
         // Given
         when(pokemonRepository.findAll()).thenReturn(pokemonList);
 
         // When
-        ResponseEntity<List<PokemonDTO>> response = pokemonController.getAllPokemon();
+        ResponseEntity<List<PokemonDTO>> response = pokemonController.getAllPokemon(null);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -113,18 +113,105 @@ class PokemonControllerTest {
         assertThat(response.getBody()).containsExactlyInAnyOrder(charmanderDto, squirtleDto);
         
         verify(pokemonRepository, times(1)).findAll();
+        verify(pokemonRepository, never()).findAllById(any());
         verify(pokemonMapper, times(1)).toDto(charmander);
         verify(pokemonMapper, times(1)).toDto(squirtle);
     }
 
     @Test
-    @DisplayName("Should return empty list when repository has no data")
-    void getAllPokemon_WhenNoData_ShouldReturnEmptyList() {
+    @DisplayName("Should return all Pokemon when empty IDs list provided and repository has data")
+    void getAllPokemon_WhenEmptyIdsListProvidedAndDataExists_ShouldReturnAllPokemon() {
+        // Given
+        when(pokemonRepository.findAll()).thenReturn(pokemonList);
+
+        // When
+        ResponseEntity<List<PokemonDTO>> response = pokemonController.getAllPokemon(Collections.emptyList());
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody()).hasSize(2);
+        assertThat(response.getBody()).containsExactlyInAnyOrder(charmanderDto, squirtleDto);
+        
+        verify(pokemonRepository, times(1)).findAll();
+        verify(pokemonRepository, never()).findAllById(any());
+        verify(pokemonMapper, times(1)).toDto(charmander);
+        verify(pokemonMapper, times(1)).toDto(squirtle);
+    }
+
+    @Test
+    @DisplayName("Should return specific Pokemon when IDs provided and repository has data")
+    void getAllPokemon_WhenIdsProvidedAndDataExists_ShouldReturnSpecificPokemon() {
+        // Given
+        List<Long> requestedIds = Arrays.asList(1L, 2L);
+        when(pokemonRepository.findAllById(requestedIds)).thenReturn(pokemonList);
+
+        // When
+        ResponseEntity<List<PokemonDTO>> response = pokemonController.getAllPokemon(requestedIds);
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody()).hasSize(2);
+        assertThat(response.getBody()).containsExactlyInAnyOrder(charmanderDto, squirtleDto);
+        
+        verify(pokemonRepository, never()).findAll();
+        verify(pokemonRepository, times(1)).findAllById(requestedIds);
+        verify(pokemonMapper, times(1)).toDto(charmander);
+        verify(pokemonMapper, times(1)).toDto(squirtle);
+    }
+
+    @Test
+    @DisplayName("Should return single Pokemon when single ID provided")
+    void getAllPokemon_WhenSingleIdProvided_ShouldReturnSinglePokemon() {
+        // Given
+        List<Long> requestedIds = Arrays.asList(1L);
+        List<Pokemon> singlePokemonList = Arrays.asList(charmander);
+        when(pokemonRepository.findAllById(requestedIds)).thenReturn(singlePokemonList);
+
+        // When
+        ResponseEntity<List<PokemonDTO>> response = pokemonController.getAllPokemon(requestedIds);
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody()).hasSize(1);
+        assertThat(response.getBody()).containsExactly(charmanderDto);
+        
+        verify(pokemonRepository, never()).findAll();
+        verify(pokemonRepository, times(1)).findAllById(requestedIds);
+        verify(pokemonMapper, times(1)).toDto(charmander);
+        verify(pokemonMapper, never()).toDto(squirtle);
+    }
+
+    @Test
+    @DisplayName("Should return empty list when IDs provided but no matching Pokemon found")
+    void getAllPokemon_WhenIdsProvidedButNoMatchingPokemon_ShouldReturnEmptyList() {
+        // Given
+        List<Long> requestedIds = Arrays.asList(999L);
+        when(pokemonRepository.findAllById(requestedIds)).thenReturn(Collections.emptyList());
+
+        // When
+        ResponseEntity<List<PokemonDTO>> response = pokemonController.getAllPokemon(requestedIds);
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody()).isEmpty();
+        
+        verify(pokemonRepository, never()).findAll();
+        verify(pokemonRepository, times(1)).findAllById(requestedIds);
+        verify(pokemonMapper, never()).toDto(any());
+    }
+
+    @Test
+    @DisplayName("Should return empty list when no IDs provided and repository has no data")
+    void getAllPokemon_WhenNoIdsProvidedAndNoData_ShouldReturnEmptyList() {
         // Given
         when(pokemonRepository.findAll()).thenReturn(Collections.emptyList());
 
         // When
-        ResponseEntity<List<PokemonDTO>> response = pokemonController.getAllPokemon();
+        ResponseEntity<List<PokemonDTO>> response = pokemonController.getAllPokemon(null);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -132,53 +219,47 @@ class PokemonControllerTest {
         assertThat(response.getBody()).isEmpty();
         
         verify(pokemonRepository, times(1)).findAll();
+        verify(pokemonRepository, never()).findAllById(any());
         verify(pokemonMapper, never()).toDto(any());
     }
 
     @Test
-    @DisplayName("Should handle repository exception gracefully")
-    void getAllPokemon_WhenRepositoryThrowsException_ShouldPropagateException() {
+    @DisplayName("Should handle repository exception gracefully when no IDs provided")
+    void getAllPokemon_WhenNoIdsProvidedAndRepositoryThrowsException_ShouldPropagateException() {
         // Given
         RuntimeException repositoryException = new RuntimeException("Database connection failed");
         when(pokemonRepository.findAll()).thenThrow(repositoryException);
 
         // When & Then
         try {
-            pokemonController.getAllPokemon();
+            pokemonController.getAllPokemon(null);
         } catch (RuntimeException e) {
             assertThat(e).isEqualTo(repositoryException);
             assertThat(e.getMessage()).isEqualTo("Database connection failed");
         }
         
         verify(pokemonRepository, times(1)).findAll();
+        verify(pokemonRepository, never()).findAllById(any());
     }
 
     @Test
-    @DisplayName("Should return Pokemon with complete type information")
-    void getAllPokemon_ShouldReturnPokemonData() {
+    @DisplayName("Should handle repository exception gracefully when IDs provided")
+    void getAllPokemon_WhenIdsProvidedAndRepositoryThrowsException_ShouldPropagateException() {
         // Given
-        when(pokemonRepository.findAll()).thenReturn(pokemonList);
+        List<Long> requestedIds = Arrays.asList(1L, 2L);
+        RuntimeException repositoryException = new RuntimeException("Database connection failed");
+        when(pokemonRepository.findAllById(requestedIds)).thenThrow(repositoryException);
 
-        // When
-        ResponseEntity<List<PokemonDTO>> response = pokemonController.getAllPokemon();
-
-        // Then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
+        // When & Then
+        try {
+            pokemonController.getAllPokemon(requestedIds);
+        } catch (RuntimeException e) {
+            assertThat(e).isEqualTo(repositoryException);
+            assertThat(e.getMessage()).isEqualTo("Database connection failed");
+        }
         
-        List<PokemonDTO> body = response.getBody();
-        PokemonDTO returnedCharmander = body.stream()
-                .filter(p -> p.getName().equals("charmander"))
-                .findFirst()
-                .orElse(null);
-        
-        assertThat(returnedCharmander).isNotNull();
-        assertThat(returnedCharmander.getTypeId()).isEqualTo(1L);
-        assertThat(returnedCharmander.getPicture()).isEqualTo("https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/4.png");
-        assertThat(returnedCharmander.getShinyPicture()).isEqualTo("https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/4.png");
-        
-        verify(pokemonRepository, times(1)).findAll();
-        verify(pokemonMapper, times(1)).toDto(charmander);
-        verify(pokemonMapper, times(1)).toDto(squirtle);
+        verify(pokemonRepository, never()).findAll();
+        verify(pokemonRepository, times(1)).findAllById(requestedIds);
     }
+
 }

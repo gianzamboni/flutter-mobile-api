@@ -1,15 +1,22 @@
 services:
-  db:
-    image: postgres
-    restart: always
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=flutter-capacitacion
+  app:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
     ports:
-      - '5432:5432'
-    volumes:
-      - db:/var/lib/postgresql/data
-volumes:
-  db:
-    driver: local 
+      - '8080:8080'
+    environment:
+      # Railway will provide DATABASE_URL automatically for PostgreSQL
+      - DB_URL=${DATABASE_URL}
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD}
+      # Optional: Add other environment variables as needed
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-production}
+    restart: always
+    # Health check to ensure the app is running properly
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s 
