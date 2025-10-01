@@ -26,7 +26,7 @@ public class PokemonType {
     private String darkColor;
     
     public enum TypeName {
-        NORMAL, FIGHTING, FLYING, POISON, GROUND, ROCK, BUG, GHOST, STEEL, 
+        NORMAL, FIGHT, FLYING, POISON, GROUND, ROCK, BUG, GHOST, STEEL, 
         FIRE, WATER, GRASS, ELECTRIC, PSYCHIC, ICE, DRAGON, DARK, FAIRY, 
         STELLAR, UNKNOWN, SHADOW
     }

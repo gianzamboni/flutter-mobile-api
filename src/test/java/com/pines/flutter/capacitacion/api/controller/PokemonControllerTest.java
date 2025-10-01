@@ -1,6 +1,7 @@
 package com.pines.flutter.capacitacion.api.controller;
 
 import com.pines.flutter.capacitacion.api.dto.PokemonDTO;
+import com.pines.flutter.capacitacion.api.dto.TypeDTO;
 import com.pines.flutter.capacitacion.api.mapper.PokemonMapper;
 import com.pines.flutter.capacitacion.api.model.pokemon.Pokemon;
 import com.pines.flutter.capacitacion.api.model.pokemon.PokemonType;
@@ -76,12 +77,15 @@ class PokemonControllerTest {
         pokemonList = Arrays.asList(charmander, squirtle);
 
         // Setup DTO test data
+        TypeDTO fireTypeDto = new TypeDTO(1L, "FIRE");
+        TypeDTO waterTypeDto = new TypeDTO(2L, "WATER");
+        
         charmanderDto = new PokemonDTO(
                 1L,
                 "charmander",
                 "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/4.png",
                 "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/4.png",
-                1L
+                fireTypeDto
         );
 
         squirtleDto = new PokemonDTO(
@@ -89,7 +93,7 @@ class PokemonControllerTest {
                 "squirtle",
                 "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/7.png",
                 "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/7.png",
-                2L
+                waterTypeDto
         );
 
         // Setup mapper mock behavior with lenient stubbing

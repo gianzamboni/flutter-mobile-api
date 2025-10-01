@@ -1,7 +1,7 @@
 -- Insert Pokemon Types with Light and Dark Colors
 INSERT INTO pokemon_type (name, light_color, dark_color) VALUES 
 ('NORMAL', '#A8A878', '#8A8A5A'),
-('FIGHTING', '#C03028', '#A02020'),
+('FIGHT', '#C03028', '#A02020'),
 ('FLYING', '#A890F0', '#8870D0'),
 ('POISON', '#A040A0', '#802080'),
 ('GROUND', '#E0C068', '#C0A048'),

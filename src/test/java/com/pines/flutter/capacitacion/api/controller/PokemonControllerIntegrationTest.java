@@ -33,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class PokemonControllerIntegrationTest {
 
     @Container
+    @SuppressWarnings("resource")
     static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15-alpine")
             .withDatabaseName("testdb")
             .withUsername("test")
@@ -114,7 +115,8 @@ class PokemonControllerIntegrationTest {
                 .andExpect(jsonPath("$[*].id", notNullValue()))
                 .andExpect(jsonPath("$[*].picture", notNullValue()))
                 .andExpect(jsonPath("$[*].shinyPicture", notNullValue()))
-                .andExpect(jsonPath("$[*].typeId", notNullValue()));
+                .andExpect(jsonPath("$[*].type.id", notNullValue()))
+                .andExpect(jsonPath("$[*].type.name", notNullValue()));
     }
 
     @Test
@@ -141,7 +143,8 @@ class PokemonControllerIntegrationTest {
                 .andExpect(jsonPath("$[0].name", isA(String.class)))
                 .andExpect(jsonPath("$[0].picture", isA(String.class)))
                 .andExpect(jsonPath("$[0].shinyPicture", isA(String.class)))
-                .andExpect(jsonPath("$[0].typeId", isA(Number.class)));
+                .andExpect(jsonPath("$[0].type.id", isA(Number.class)))
+                .andExpect(jsonPath("$[0].type.name", isA(String.class)));
     }
 
     @Test

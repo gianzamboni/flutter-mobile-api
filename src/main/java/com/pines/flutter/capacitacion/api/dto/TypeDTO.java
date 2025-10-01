@@ -7,10 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class PokemonDTO {
+public class TypeDTO {
     private Long id;
     private String name;
-    private String picture;
-    private String shinyPicture;
-    private TypeDTO type;
 }
