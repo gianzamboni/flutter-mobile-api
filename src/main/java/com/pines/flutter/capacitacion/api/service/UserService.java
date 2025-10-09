@@ -66,10 +66,7 @@ public class UserService {
         // Create response
         return new AuthResponseDTO(
             token,
-            user.getId(),
-            user.getUsername(),
-            user.getName(),
-            user.getSurname()
+            userMapper.toDto(user)
         );
     }
 }

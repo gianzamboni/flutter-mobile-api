@@ -106,7 +106,7 @@ class PokemonControllerIntegrationTest {
     @Test
     @DisplayName("Should return all Pokemon with HTTP 200 status")
     void getAllPokemon_ShouldReturnAllPokemonWith200Status() throws Exception {
-        mockMvc.perform(get("/pokemon")
+        mockMvc.perform(get("/api/pokemon")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -125,7 +125,7 @@ class PokemonControllerIntegrationTest {
         // Clear all Pokemon
         pokemonRepository.deleteAll();
 
-        mockMvc.perform(get("/pokemon")
+        mockMvc.perform(get("/api/pokemon")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -136,7 +136,7 @@ class PokemonControllerIntegrationTest {
     @Test
     @DisplayName("Should return Pokemon with correct JSON structure")
     void getAllPokemon_ShouldReturnCorrectJsonStructure() throws Exception {
-        mockMvc.perform(get("/pokemon")
+        mockMvc.perform(get("/api/pokemon")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id", isA(Number.class)))
@@ -162,7 +162,7 @@ class PokemonControllerIntegrationTest {
             pokemonRepository.save(pokemon);
         }
 
-        mockMvc.perform(get("/pokemon")
+        mockMvc.perform(get("/api/pokemon")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(13))) // 3 original + 10 new

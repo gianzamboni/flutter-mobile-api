@@ -141,10 +141,10 @@ class AuthControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.token", allOf(notNullValue(), not(emptyString()))))
-                .andExpect(jsonPath("$.userId", is(user.getId().intValue())))
-                .andExpect(jsonPath("$.username").value("asmith"))
-                .andExpect(jsonPath("$.name").value("Alice"))
-                .andExpect(jsonPath("$.surname").value("Smith"));
+                .andExpect(jsonPath("$.user.id", is(user.getId().intValue())))
+                .andExpect(jsonPath("$.user.username").value("asmith"))
+                .andExpect(jsonPath("$.user.name").value("Alice"))
+                .andExpect(jsonPath("$.user.surname").value("Smith"));
     }
 
     @Test
