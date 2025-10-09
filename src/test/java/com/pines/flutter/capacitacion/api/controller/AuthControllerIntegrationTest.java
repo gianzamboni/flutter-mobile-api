@@ -140,7 +140,7 @@ class AuthControllerIntegrationTest {
                         .content(objectMapper.writeValueAsString(login)))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.token", allOf(notNullValue(), not(isEmptyString()))))
+                .andExpect(jsonPath("$.token", allOf(notNullValue(), not(emptyString()))))
                 .andExpect(jsonPath("$.userId", is(user.getId().intValue())))
                 .andExpect(jsonPath("$.username").value("asmith"))
                 .andExpect(jsonPath("$.name").value("Alice"))
