@@ -45,7 +45,7 @@ services:
     develop:
       watch:
         - action: rebuild
-          path: ./src
+          path: ./src/main
         - action: rebuild
           path: ./pom.xml
         - action: rebuild
