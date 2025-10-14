@@ -60,8 +60,8 @@ public class UserService {
             throw new BadCredentialsException("Invalid username or password");
         }
 
-        // Generate token
-        String token = jwtTokenProvider.generateToken(user.getUsername());
+        // Generate token using userId as subject
+        String token = jwtTokenProvider.generateToken(user.getId());
 
         // Create response
         return new AuthResponseDTO(

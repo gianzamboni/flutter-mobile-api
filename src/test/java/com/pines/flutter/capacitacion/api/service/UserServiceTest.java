@@ -93,7 +93,7 @@ class UserServiceTest {
         UserLoginDTO login = new UserLoginDTO("ash", "pw");
         when(userRepository.findByUsername("ash")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("pw", "enc")).thenReturn(true);
-        when(jwtTokenProvider.generateToken("ash")).thenReturn("token123");
+        when(jwtTokenProvider.generateToken(1L)).thenReturn("token123");
 
         AuthResponseDTO response = userService.loginUser(login);
 
