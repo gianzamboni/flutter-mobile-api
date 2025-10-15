@@ -43,11 +43,11 @@ public class PokemonController {
             @Parameter(description = "List of Pokemon IDs to filter by.", example = "1,2,3")
             @RequestParam(required = false) List<Long> ids,
             @Parameter(description = "Comma-separated list of fields to include (e.g., name,picture). 'id' is always included.", example = "name")
-            @RequestParam String fields) {
+            @RequestParam(required = false) List<String> fields) {
 
         List<PokemonDTO> pokemonDtos = pokemonService.getAllPokemon(ids);
 
-        Set<String> requestedFields = List.of(fields.split(","))
+        Set<String> requestedFields = fields
                 .stream()
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
