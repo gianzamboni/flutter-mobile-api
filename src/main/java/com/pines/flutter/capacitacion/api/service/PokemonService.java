@@ -31,7 +31,7 @@ public class PokemonService {
         } else {
             pokemon = pokemonRepository.findAllById(ids);
         }
-        
+
         return pokemon.stream()
                 .map(pokemonMapper::toDto)
                 .collect(Collectors.toList());

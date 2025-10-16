@@ -12,9 +12,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByUsername(String username);
     boolean existsByUsername(String username);
 
-    @EntityGraph(attributePaths = {"favouritePokemon"})
+    @EntityGraph(attributePaths = {"favouritePokemon", "favouritePokemon.pokemon", "favouritePokemon.pokemon.type"})
     Optional<User> findWithFavouritePokemonByUsername(String username);
 
-    @EntityGraph(attributePaths = {"favouritePokemon"})
+    @EntityGraph(attributePaths = {"favouritePokemon", "favouritePokemon.pokemon", "favouritePokemon.pokemon.type"})
     Optional<User> findWithFavouritePokemonById(Long id);
 }

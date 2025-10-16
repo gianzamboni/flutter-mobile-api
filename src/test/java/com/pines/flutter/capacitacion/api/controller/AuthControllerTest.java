@@ -1,6 +1,7 @@
 package com.pines.flutter.capacitacion.api.controller;
 
 import com.pines.flutter.capacitacion.api.dto.AuthResponseDTO;
+import com.pines.flutter.capacitacion.api.dto.ErrorResponseDTO;
 import com.pines.flutter.capacitacion.api.dto.UserDTO;
 import com.pines.flutter.capacitacion.api.dto.UserLoginDTO;
 import com.pines.flutter.capacitacion.api.dto.UserRegistrationDTO;
@@ -13,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -49,7 +51,8 @@ class AuthControllerTest {
         ResponseEntity<?> response = controller.registerUser(req);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(response.getBody()).isEqualTo("Username already exists");
+        ErrorResponseDTO errorBody = (ErrorResponseDTO) Objects.requireNonNull(response.getBody());
+        assertThat(errorBody.getMessage()).isEqualTo("Username already exists");
     }
 
     @Test
@@ -61,7 +64,8 @@ class AuthControllerTest {
         ResponseEntity<?> response = controller.registerUser(req);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-        assertThat(response.getBody()).isEqualTo("An error occurred during registration");
+        ErrorResponseDTO errorBody = (ErrorResponseDTO) Objects.requireNonNull(response.getBody());
+        assertThat(errorBody.getMessage()).isEqualTo("An error occurred during registration");
     }
 
     @Test
@@ -87,7 +91,8 @@ class AuthControllerTest {
         ResponseEntity<?> response = controller.loginUser(req);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-        assertThat(response.getBody()).isEqualTo("Invalid username or password");
+        ErrorResponseDTO errorBody = (ErrorResponseDTO) Objects.requireNonNull(response.getBody());
+        assertThat(errorBody.getMessage()).isEqualTo("Invalid username or password");
     }
 }
 

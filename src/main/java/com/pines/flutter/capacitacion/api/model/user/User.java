@@ -8,8 +8,8 @@ import lombok.NoArgsConstructor;
 import com.pines.flutter.capacitacion.api.model.pokemon.Pokemon;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -39,13 +39,20 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "user_favourite_pokemon",
-        joinColumns = @JoinColumn(name = "user_id"),
-        inverseJoinColumns = @JoinColumn(name = "pokemon_id")
-    )
-    private Set<Pokemon> favouritePokemon = new HashSet<>();
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("rankingNumber ASC")
+    private List<UserFavouritePokemon> favouritePokemon = new ArrayList<>();
+
+    public void addFavouritePokemon(Pokemon pokemon) {
+        int nextRank = favouritePokemon.size() + 1;
+        UserFavouritePokemon link = new UserFavouritePokemon(
+                new UserFavouritePokemonId(this.id, pokemon.getId()),
+                this,
+                pokemon,
+                nextRank
+        );
+        favouritePokemon.add(link);
+    }
 
     @PrePersist
     protected void onCreate() {

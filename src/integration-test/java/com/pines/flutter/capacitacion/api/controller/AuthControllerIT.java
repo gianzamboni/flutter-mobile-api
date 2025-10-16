@@ -33,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @Transactional
 @DisplayName("AuthController Integration Tests")
-class AuthControllerIntegrationTest {
+class AuthControllerIT {
 
     @Container
     @SuppressWarnings("resource")
@@ -167,6 +167,23 @@ class AuthControllerIntegrationTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(content().string(containsString("Invalid username or password")));
     }
-}
+    
+    @Test
+    @DisplayName("POST /api/auth/register should be accessible without authentication (returns 400 for invalid body)")
+    void register_ShouldBePublic_NoAuthRequired() throws Exception {
+        mockMvc.perform(post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+            .andExpect(status().isBadRequest());
+    }
 
+    @Test
+    @DisplayName("POST /api/auth/login should be accessible without authentication (returns 400 for invalid body)")
+    void login_ShouldBePublic_NoAuthRequired() throws Exception {
+        mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+            .andExpect(status().isBadRequest());
+    }
+}
 
