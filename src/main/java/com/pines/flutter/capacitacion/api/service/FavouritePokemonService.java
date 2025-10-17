@@ -1,6 +1,6 @@
 package com.pines.flutter.capacitacion.api.service;
 
-import com.pines.flutter.capacitacion.api.dto.PokemonDTO;
+import com.pines.flutter.capacitacion.api.dto.FavouritePokemonDTO;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
 import com.pines.flutter.capacitacion.api.mapper.PokemonMapper;
@@ -9,6 +9,7 @@ import com.pines.flutter.capacitacion.api.model.user.UserFavouritePokemon;
 import com.pines.flutter.capacitacion.api.model.user.User;
 import com.pines.flutter.capacitacion.api.repository.PokemonRepository;
 import com.pines.flutter.capacitacion.api.repository.UserRepository;
+import com.pines.flutter.capacitacion.api.repository.UserFavouritePokemonRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -33,31 +34,34 @@ public class FavouritePokemonService {
     @Autowired
     private final PokemonRepository pokemonRepository;
 
-    public List<PokemonDTO> getFavouritePokemonForCurrentUser() {
+    @Autowired
+    private final UserFavouritePokemonRepository userFavouritePokemonRepository;
+
+    public List<FavouritePokemonDTO> getFavouritePokemonForCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Long userId = Long.parseLong(authentication.getName());
 
-        User user = userRepository.findWithFavouritePokemonById(userId)
+        userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalStateException("Authenticated user not found: " + userId));
 
-        List<UserFavouritePokemon> favourites = user.getFavouritePokemon();
+        List<UserFavouritePokemon> favourites = userFavouritePokemonRepository.findAllByUser_IdOrderByRankingNumberAsc(userId);
         return favourites.stream()
-                .map(UserFavouritePokemon::getPokemon)
-                .map(pokemonMapper::toDto)
+                .map(link -> new FavouritePokemonDTO(
+                        pokemonMapper.toDto(link.getPokemon()),
+                        link.getRankingNumber()
+                ))
                 .collect(Collectors.toList());
     }
 
     @Transactional
-    public PokemonDTO addFavouritePokemonForCurrentUser(Long pokemonId) {
+    public FavouritePokemonDTO addFavouritePokemonForCurrentUser(Long pokemonId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Long userId = Long.parseLong(authentication.getName());
 
-        User user = userRepository.findWithFavouritePokemonById(userId)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalStateException("Authenticated user not found: " + userId));
 
-        Optional<UserFavouritePokemon> alreadyFavourite = user.getFavouritePokemon().stream()
-                .filter(link -> link.getPokemon() != null && pokemonId.equals(link.getPokemon().getId()))
-                .findFirst();
+        Optional<UserFavouritePokemon> alreadyFavourite = userFavouritePokemonRepository.findByUser_IdAndPokemon_Id(userId, pokemonId);
         if (alreadyFavourite.isPresent()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Pokemon is already in favourites");
         }
@@ -67,7 +71,11 @@ public class FavouritePokemonService {
 
         user.addFavouritePokemon(pokemon);
         userRepository.save(user);
-        return pokemonMapper.toDto(pokemon);
+
+        // After save, the new favourite should be at the end with ranking = size
+        List<UserFavouritePokemon> savedFavourites = userFavouritePokemonRepository.findAllByUser_IdOrderByRankingNumberAsc(userId);
+        UserFavouritePokemon last = savedFavourites.get(savedFavourites.size() - 1);
+        return new FavouritePokemonDTO(pokemonMapper.toDto(last.getPokemon()), last.getRankingNumber());
     }
 
     @Transactional
@@ -75,58 +83,59 @@ public class FavouritePokemonService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Long userId = Long.parseLong(authentication.getName());
 
-        User user = userRepository.findWithFavouritePokemonById(userId)
+        userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalStateException("Authenticated user not found: " + userId));
 
-        boolean removed = user.getFavouritePokemon().removeIf(pokemonRanking ->
-                pokemonRanking.getPokemon() != null && pokemonId.equals(pokemonRanking.getPokemon().getId())
-        );
-
-        if (removed) {
-            // Re-compact ranking numbers to keep ordering contiguous
-            int rank = 1;
-            for (UserFavouritePokemon link : user.getFavouritePokemon()) {
-                link.setRankingNumber(rank++);
-            }
-            userRepository.save(user);
+        Optional<UserFavouritePokemon> favouritePokemonOptional = userFavouritePokemonRepository.findByUser_IdAndPokemon_Id(userId, pokemonId);
+        if (favouritePokemonOptional.isEmpty()) {
+            return;
         }
+
+        UserFavouritePokemon toRemove = favouritePokemonOptional.get();
+        userFavouritePokemonRepository.delete(toRemove);
+
+        // shift down ranks above the removed rank
+        List<UserFavouritePokemon> remaining = userFavouritePokemonRepository.findAllByUser_IdOrderByRankingNumberAsc(userId);
+        int expected = 1;
+        for (UserFavouritePokemon link : remaining) {
+            if (!link.getRankingNumber().equals(expected)) {
+                link.setRankingNumber(expected);
+            }
+            expected++;
+        }
+        userFavouritePokemonRepository.saveAll(remaining);
     }
 
     @Transactional
-    public void swapFavouritesForCurrentUser(Long pokemonId1, Long pokemonId2) {
-        if (pokemonId1 == null || pokemonId2 == null || pokemonId1.equals(pokemonId2)) {
-            return; // nothing to swap
-        }
-
+    public void swapFavouritesForCurrentUser(Integer rankingNumber1, Integer rankingNumber2) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Long userId = Long.parseLong(authentication.getName());
 
-        User user = userRepository.findWithFavouritePokemonById(userId)
+        userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalStateException("Authenticated user not found: " + userId));
 
-        UserFavouritePokemon first = null;
-        UserFavouritePokemon second = null;
-        for (UserFavouritePokemon pokemonRanking : user.getFavouritePokemon()) {
-            if (pokemonRanking.getPokemon() == null) continue;
-            Long id = pokemonRanking.getPokemon().getId();
-            if (first == null && pokemonId1.equals(id)) {
-                first = pokemonRanking;
-            } else if (second == null && pokemonId2.equals(id)) {
-                second = pokemonRanking;
-            }
-            if (first != null && second != null) break;
-        }
-
+        UserFavouritePokemon first = userFavouritePokemonRepository.findByUser_IdAndRankingNumber(userId, rankingNumber1)
+                .orElse(null);
+        UserFavouritePokemon second = userFavouritePokemonRepository.findByUser_IdAndRankingNumber(userId, rankingNumber2)
+                .orElse(null);
         if (first == null || second == null) {
-            return; // one or both not present; no-op
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "One or both Pokemon not found in favourites");
         }
 
         Integer rank1 = first.getRankingNumber();
         Integer rank2 = second.getRankingNumber();
-        first.setRankingNumber(rank2);
-        second.setRankingNumber(rank1);
-        userRepository.save(user);
-    }
-}
 
+        // safe swap avoiding unique constraint clash using a temporary sentinel rank
+        int tempRank = -1;
+        first.setRankingNumber(tempRank);
+        userFavouritePokemonRepository.save(first);
+
+        second.setRankingNumber(rank1);
+        userFavouritePokemonRepository.save(second);
+
+        first.setRankingNumber(rank2);
+        userFavouritePokemonRepository.save(first);
+    }
+
+}
 

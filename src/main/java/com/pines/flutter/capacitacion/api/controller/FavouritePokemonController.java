@@ -1,12 +1,13 @@
 package com.pines.flutter.capacitacion.api.controller;
 
 import com.pines.flutter.capacitacion.api.dto.AddFavouriteRequestDTO;
-import com.pines.flutter.capacitacion.api.dto.PokemonDTO;
+import com.pines.flutter.capacitacion.api.dto.FavouritePokemonDTO;
 import com.pines.flutter.capacitacion.api.dto.SwapFavouritesRequestDTO;
 import com.pines.flutter.capacitacion.api.service.FavouritePokemonService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.HttpStatus;
@@ -33,15 +34,15 @@ public class FavouritePokemonController {
 
     @GetMapping
     @Operation(summary = "Get current user's favourite Pokemon")
-    public ResponseEntity<List<PokemonDTO>> getFavourites() {
-        List<PokemonDTO> favourites = favouritePokemonService.getFavouritePokemonForCurrentUser();
+    public ResponseEntity<List<FavouritePokemonDTO>> getFavourites() {
+        List<FavouritePokemonDTO> favourites = favouritePokemonService.getFavouritePokemonForCurrentUser();
         return ResponseEntity.ok(favourites);
     }
 
     @PostMapping
     @Operation(summary = "Add a Pokemon to current user's favourites")
-    public ResponseEntity<PokemonDTO> addFavourite(@RequestBody AddFavouriteRequestDTO request) {
-        PokemonDTO added = favouritePokemonService.addFavouritePokemonForCurrentUser(request.getPokemonId());
+    public ResponseEntity<FavouritePokemonDTO> addFavourite(@Valid @RequestBody AddFavouriteRequestDTO request) {
+        FavouritePokemonDTO added = favouritePokemonService.addFavouritePokemonForCurrentUser(request.getPokemonId());
         return ResponseEntity.status(HttpStatus.CREATED).body(added);
     }
 
@@ -54,9 +55,8 @@ public class FavouritePokemonController {
     
     @PatchMapping
     @Operation(summary = "Swap two Pokemon in current user's favourites")
-    public ResponseEntity<Void> swapFavourites(@RequestBody SwapFavouritesRequestDTO request) {
-        favouritePokemonService.swapFavouritesForCurrentUser(request.getPokemonId1(), request.getPokemonId2());
+    public ResponseEntity<Void> swapFavourites(@Valid @RequestBody SwapFavouritesRequestDTO request) {
+        favouritePokemonService.swapFavouritesForCurrentUser(request.getRankingNumber1(), request.getRankingNumber2());
         return ResponseEntity.noContent().build();
     }
-}      
-
+}

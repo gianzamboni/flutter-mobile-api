@@ -2,6 +2,7 @@ package com.pines.flutter.capacitacion.api.controller;
 
 import com.pines.flutter.capacitacion.api.dto.AddFavouriteRequestDTO;
 import com.pines.flutter.capacitacion.api.dto.PokemonDTO;
+import com.pines.flutter.capacitacion.api.dto.FavouritePokemonDTO;
 import com.pines.flutter.capacitacion.api.dto.SwapFavouritesRequestDTO;
 import com.pines.flutter.capacitacion.api.dto.TypeDTO;
 import com.pines.flutter.capacitacion.api.service.FavouritePokemonService;
@@ -59,34 +60,40 @@ class FavouritePokemonControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/favourite-pokemon returns favourites with 200")
+    @DisplayName("GET /api/favourite-pokemon returns favourites with ranking and 200")
     void getFavourites_ReturnsOkWithBody() {
         // Given
-        List<PokemonDTO> favourites = Arrays.asList(charmanderDto, squirtleDto);
+        List<FavouritePokemonDTO> favourites = Arrays.asList(
+                new FavouritePokemonDTO(charmanderDto, 1),
+                new FavouritePokemonDTO(squirtleDto, 2)
+        );
         when(favouritePokemonService.getFavouritePokemonForCurrentUser()).thenReturn(favourites);
 
         // When
-        ResponseEntity<List<PokemonDTO>> response = controller.getFavourites();
+        ResponseEntity<List<FavouritePokemonDTO>> response = controller.getFavourites();
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).containsExactly(charmanderDto, squirtleDto);
+        assertThat(response.getBody()).containsExactly(
+                new FavouritePokemonDTO(charmanderDto, 1),
+                new FavouritePokemonDTO(squirtleDto, 2)
+        );
         verify(favouritePokemonService, times(1)).getFavouritePokemonForCurrentUser();
     }
 
     @Test
-    @DisplayName("POST /api/favourite-pokemon adds favourite and returns 201")
+    @DisplayName("POST /api/favourite-pokemon adds favourite with ranking and returns 201")
     void addFavourite_ReturnsCreatedWithBody() {
         // Given
         AddFavouriteRequestDTO request = new AddFavouriteRequestDTO(1L);
-        when(favouritePokemonService.addFavouritePokemonForCurrentUser(1L)).thenReturn(charmanderDto);
+        when(favouritePokemonService.addFavouritePokemonForCurrentUser(1L)).thenReturn(new FavouritePokemonDTO(charmanderDto, 1));
 
         // When
-        ResponseEntity<PokemonDTO> response = controller.addFavourite(request);
+        ResponseEntity<FavouritePokemonDTO> response = controller.addFavourite(request);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(response.getBody()).isEqualTo(charmanderDto);
+        assertThat(response.getBody()).isEqualTo(new FavouritePokemonDTO(charmanderDto, 1));
         verify(favouritePokemonService, times(1)).addFavouritePokemonForCurrentUser(1L);
     }
 
@@ -105,13 +112,13 @@ class FavouritePokemonControllerTest {
     @DisplayName("PATCH /api/favourite-pokemon swaps favourites and returns 204")
     void swapFavourites_ReturnsNoContent() {
         // Given
-        SwapFavouritesRequestDTO request = new SwapFavouritesRequestDTO(1L, 2L);
+        SwapFavouritesRequestDTO request = new SwapFavouritesRequestDTO(1, 2);
 
         // When
         ResponseEntity<Void> response = controller.swapFavourites(request);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-        verify(favouritePokemonService, times(1)).swapFavouritesForCurrentUser(1L, 2L);
+        verify(favouritePokemonService, times(1)).swapFavouritesForCurrentUser(1, 2);
     }
 }

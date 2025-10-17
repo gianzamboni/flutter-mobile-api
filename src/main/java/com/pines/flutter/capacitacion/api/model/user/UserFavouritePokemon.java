@@ -7,7 +7,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "user_favourite_pokemon")
+@Table(
+        name = "user_favourite_pokemon",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_user_fav_rank_per_user", columnNames = {"user_id", "ranking_number"})
+        }
+)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

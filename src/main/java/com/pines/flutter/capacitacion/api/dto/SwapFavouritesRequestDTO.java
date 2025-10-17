@@ -10,10 +10,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class SwapFavouritesRequestDTO {
     @NotNull
-    private Long pokemonId1;
+    private Integer rankingNumber1;
 
     @NotNull
-    private Long pokemonId2;
+    private Integer rankingNumber2;
 }
 
 
