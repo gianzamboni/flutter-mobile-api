@@ -109,16 +109,25 @@ class FavouritePokemonControllerTest {
     }
 
     @Test
-    @DisplayName("PATCH /api/favourite-pokemon swaps favourites and returns 204")
-    void swapFavourites_ReturnsNoContent() {
+    @DisplayName("PATCH /api/favourite-pokemon swaps favourites and returns updated list")
+    void swapFavourites_ReturnsUpdatedList() {
         // Given
         SwapFavouritesRequestDTO request = new SwapFavouritesRequestDTO(1, 2);
+        List<FavouritePokemonDTO> updated = Arrays.asList(
+                new FavouritePokemonDTO(charmanderDto, 2),
+                new FavouritePokemonDTO(squirtleDto, 1)
+        );
+        when(favouritePokemonService.swapFavouritesForCurrentUser(1, 2)).thenReturn(updated);
 
         // When
-        ResponseEntity<Void> response = controller.swapFavourites(request);
+        ResponseEntity<List<FavouritePokemonDTO>> response = controller.swapFavourites(request);
 
         // Then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).containsExactly(
+                new FavouritePokemonDTO(charmanderDto, 2),
+                new FavouritePokemonDTO(squirtleDto, 1)
+        );
         verify(favouritePokemonService, times(1)).swapFavouritesForCurrentUser(1, 2);
     }
 }

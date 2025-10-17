@@ -55,8 +55,8 @@ public class FavouritePokemonController {
     
     @PatchMapping
     @Operation(summary = "Swap two Pokemon in current user's favourites")
-    public ResponseEntity<Void> swapFavourites(@Valid @RequestBody SwapFavouritesRequestDTO request) {
-        favouritePokemonService.swapFavouritesForCurrentUser(request.getRankingNumber1(), request.getRankingNumber2());
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<List<FavouritePokemonDTO>> swapFavourites(@Valid @RequestBody SwapFavouritesRequestDTO request) {
+        List<FavouritePokemonDTO> updated = favouritePokemonService.swapFavouritesForCurrentUser(request.getRankingNumber1(), request.getRankingNumber2());
+        return ResponseEntity.ok(updated);
     }
 }

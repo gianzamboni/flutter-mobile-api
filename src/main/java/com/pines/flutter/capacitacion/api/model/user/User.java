@@ -44,7 +44,7 @@ public class User {
     private List<UserFavouritePokemon> favouritePokemon = new ArrayList<>();
 
     public void addFavouritePokemon(Pokemon pokemon) {
-        int nextRank = favouritePokemon.size() + 1;
+        int nextRank = favouritePokemon.size() + 1; 
         UserFavouritePokemon link = new UserFavouritePokemon(
                 new UserFavouritePokemonId(this.id, pokemon.getId()),
                 this,

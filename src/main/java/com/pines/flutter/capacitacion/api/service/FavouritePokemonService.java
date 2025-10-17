@@ -107,17 +107,22 @@ public class FavouritePokemonService {
     }
 
     @Transactional
-    public void swapFavouritesForCurrentUser(Integer rankingNumber1, Integer rankingNumber2) {
+    public List<FavouritePokemonDTO> swapFavouritesForCurrentUser(Integer rankingNumber1, Integer rankingNumber2) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Long userId = Long.parseLong(authentication.getName());
 
         userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalStateException("Authenticated user not found: " + userId));
 
+        if (rankingNumber1.equals(rankingNumber2)) {
+            return List.of();
+        }
+
         UserFavouritePokemon first = userFavouritePokemonRepository.findByUser_IdAndRankingNumber(userId, rankingNumber1)
                 .orElse(null);
         UserFavouritePokemon second = userFavouritePokemonRepository.findByUser_IdAndRankingNumber(userId, rankingNumber2)
                 .orElse(null);
+                
         if (first == null || second == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "One or both Pokemon not found in favourites");
         }
@@ -129,12 +134,19 @@ public class FavouritePokemonService {
         int tempRank = -1;
         first.setRankingNumber(tempRank);
         userFavouritePokemonRepository.save(first);
+        userFavouritePokemonRepository.flush();
 
         second.setRankingNumber(rank1);
         userFavouritePokemonRepository.save(second);
+        userFavouritePokemonRepository.flush();
 
         first.setRankingNumber(rank2);
         userFavouritePokemonRepository.save(first);
+
+        return List.of(
+                new FavouritePokemonDTO(pokemonMapper.toDto(second.getPokemon()), rank1),
+                new FavouritePokemonDTO(pokemonMapper.toDto(first.getPokemon()), rank2)
+        );
     }
 
 }
