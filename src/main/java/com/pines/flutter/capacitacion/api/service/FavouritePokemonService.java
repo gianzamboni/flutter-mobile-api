@@ -1,6 +1,8 @@
 package com.pines.flutter.capacitacion.api.service;
 
 import com.pines.flutter.capacitacion.api.dto.PokemonDTO;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 import com.pines.flutter.capacitacion.api.mapper.PokemonMapper;
 import com.pines.flutter.capacitacion.api.model.pokemon.Pokemon;
 import com.pines.flutter.capacitacion.api.model.user.UserFavouritePokemon;
@@ -57,7 +59,7 @@ public class FavouritePokemonService {
                 .filter(link -> link.getPokemon() != null && pokemonId.equals(link.getPokemon().getId()))
                 .findFirst();
         if (alreadyFavourite.isPresent()) {
-            return pokemonMapper.toDto(alreadyFavourite.get().getPokemon());
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Pokemon is already in favourites");
         }
 
         Pokemon pokemon = pokemonRepository.findById(pokemonId)

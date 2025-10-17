@@ -127,4 +127,50 @@ class PokemonControllerIT {
                 .andExpect(jsonPath("$", hasSize(13))) // 3 original + 10 new
                 .andExpect(jsonPath("$[*].name", hasItem(startsWith("test-pokemon-"))));
     }
+
+    @Test
+    @DisplayName("Should return only id and name when fields=name")
+    void getAllPokemonWithSelectedFields_WhenFieldsName_ShouldFilterToIdAndName() throws Exception {
+        mockMvc.perform(get("/api/pokemon")
+                        .param("fields", "name")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(3)))
+                .andExpect(jsonPath("$[*].id", notNullValue()))
+                .andExpect(jsonPath("$[*].name", notNullValue()))
+                .andExpect(jsonPath("$[*].picture").doesNotExist())
+                .andExpect(jsonPath("$[*].shinyPicture").doesNotExist())
+                .andExpect(jsonPath("$[*].type").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("Should include only id when fields is empty list and ids provided")
+    void getAllPokemonWithSelectedFields_WhenFieldsEmptyAndIdsProvided_ShouldReturnOnlyId() throws Exception {
+        // Pick a known id from seeded data (first inserted has id 1)
+        mockMvc.perform(get("/api/pokemon")
+                        .param("ids", "1")
+                        .param("fields", "")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].id", notNullValue()))
+                .andExpect(jsonPath("$[0].name").doesNotExist())
+                .andExpect(jsonPath("$[0].picture").doesNotExist())
+                .andExpect(jsonPath("$[0].shinyPicture").doesNotExist())
+                .andExpect(jsonPath("$[0].type").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("Should trim, deduplicate fields and always include id")
+    void getAllPokemonWithSelectedFields_WhenFieldsContainBlanksAndDuplicates_ShouldTrimDedupAndIncludeId() throws Exception {
+        mockMvc.perform(get("/api/pokemon")
+                        .param("fields", " ,name, name ,  picture  ")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].id", notNullValue()))
+                .andExpect(jsonPath("$[*].name", notNullValue()))
+                .andExpect(jsonPath("$[*].picture", notNullValue()))
+                .andExpect(jsonPath("$[*].shinyPicture").doesNotExist())
+                .andExpect(jsonPath("$[*].type").doesNotExist());
+    }
 }

@@ -44,12 +44,9 @@ public class PokemonController {
         .filter(s -> !s.isEmpty())
         .collect(Collectors.toSet());
 
-    // Always include 'id'
     requestedFields.add("id");
 
     List<PokemonDTO> pokemonDtos = pokemonService.getAllPokemon(ids);
-
-   
 
     SimpleFilterProvider filters = new SimpleFilterProvider()
         .addFilter("PokemonDTOFilter", SimpleBeanPropertyFilter.filterOutAllExcept(requestedFields));

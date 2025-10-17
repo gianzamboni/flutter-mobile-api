@@ -50,7 +50,7 @@ public class FavouritePokemonController {
     public ResponseEntity<Void> removeFavourite(@PathVariable Long pokemonId) {
         favouritePokemonService.removeFavouritePokemonForCurrentUser(pokemonId);
         return ResponseEntity.noContent().build();
-    }
+    }   
     
     @PatchMapping
     @Operation(summary = "Swap two Pokemon in current user's favourites")

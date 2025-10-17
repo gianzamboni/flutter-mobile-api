@@ -13,6 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.json.MappingJacksonValue;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -215,5 +216,94 @@ class PokemonControllerTest {
         }
 
         verify(pokemonService, times(1)).getAllPokemon(requestedIds);
+    }
+
+    @Test
+    @DisplayName("Should filter to id and name when fields=name")
+    void getAllPokemonWithSelectedFields_WhenFieldsName_ShouldReturnOnlyIdAndName() throws Exception {
+        // Given
+        when(pokemonService.getAllPokemon(null)).thenReturn(pokemonDtoList);
+
+        // When
+        ResponseEntity<MappingJacksonValue> response = pokemonController.getAllPokemonWithSelectedFields(null, Arrays.asList("name"));
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+
+        MappingJacksonValue wrapper = java.util.Objects.requireNonNull(response.getBody());
+
+        // Serialize applying filters to assert actual JSON output contains only expected fields
+        com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        objectMapper.setFilterProvider(wrapper.getFilters());
+        String json = objectMapper.writeValueAsString(wrapper.getValue());
+
+        com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(json);
+        assertThat(root.isArray()).isTrue();
+        assertThat(root.size()).isEqualTo(2);
+
+        com.fasterxml.jackson.databind.JsonNode first = root.get(0);
+        assertThat(first.has("id")).isTrue();
+        assertThat(first.has("name")).isTrue();
+        assertThat(first.has("picture")).isFalse();
+        assertThat(first.has("shinyPicture")).isFalse();
+        assertThat(first.has("type")).isFalse();
+    }
+
+    @Test
+    @DisplayName("Should include id only when fields is empty and ids filter provided")
+    void getAllPokemonWithSelectedFields_WhenFieldsEmptyAndIdsProvided_ShouldReturnOnlyId() throws Exception {
+        // Given
+        List<Long> requestedIds = Arrays.asList(1L);
+        List<PokemonDTO> single = Arrays.asList(charmanderDto);
+        when(pokemonService.getAllPokemon(requestedIds)).thenReturn(single);
+
+        // When
+        ResponseEntity<MappingJacksonValue> response = pokemonController.getAllPokemonWithSelectedFields(requestedIds, Collections.emptyList());
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+
+        MappingJacksonValue wrapper = java.util.Objects.requireNonNull(response.getBody());
+        com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        objectMapper.setFilterProvider(wrapper.getFilters());
+        String json = objectMapper.writeValueAsString(wrapper.getValue());
+
+        com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(json);
+        assertThat(root.isArray()).isTrue();
+        assertThat(root.size()).isEqualTo(1);
+
+        com.fasterxml.jackson.databind.JsonNode first = root.get(0);
+        assertThat(first.has("id")).isTrue();
+        assertThat(first.size()).isEqualTo(1); // only id present
+    }
+
+    @Test
+    @DisplayName("Should trim, deduplicate, and always include id")
+    void getAllPokemonWithSelectedFields_WhenFieldsContainBlanksAndDuplicates_ShouldTrimDedupAndIncludeId() throws Exception {
+        // Given
+        when(pokemonService.getAllPokemon(null)).thenReturn(pokemonDtoList);
+
+        // When
+        ResponseEntity<MappingJacksonValue> response = pokemonController.getAllPokemonWithSelectedFields(null, Arrays.asList(" ", "name", "name", "  picture  "));
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+
+        MappingJacksonValue wrapper = java.util.Objects.requireNonNull(response.getBody());
+        com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        objectMapper.setFilterProvider(wrapper.getFilters());
+        String json = objectMapper.writeValueAsString(wrapper.getValue());
+
+        com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(json);
+        com.fasterxml.jackson.databind.JsonNode first = root.get(0);
+
+        assertThat(first.has("id")).isTrue();
+        assertThat(first.has("name")).isTrue();
+        assertThat(first.has("picture")).isTrue();
+        assertThat(first.has("shinyPicture")).isFalse();
+        assertThat(first.has("type")).isFalse();
     }
 }
