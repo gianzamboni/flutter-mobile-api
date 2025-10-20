@@ -1,87 +1,60 @@
 package com.pines.flutter.capacitacion.api.controller;
 
 import com.pines.flutter.capacitacion.api.dto.PokemonDTO;
-import com.pines.flutter.capacitacion.api.mapper.PokemonMapper;
-import com.pines.flutter.capacitacion.api.model.pokemon.Pokemon;
-import com.pines.flutter.capacitacion.api.model.pokemon.PokemonType;
-import com.pines.flutter.capacitacion.api.repository.PokemonRepository;
+import com.pines.flutter.capacitacion.api.dto.TypeDTO;
+import com.pines.flutter.capacitacion.api.service.PokemonService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.json.MappingJacksonValue;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("PokemonController Unit Tests")
 class PokemonControllerTest {
 
     @Mock
-    private PokemonRepository pokemonRepository;
-
-    @Mock
-    private PokemonMapper pokemonMapper;
+    private PokemonService pokemonService;
 
     @InjectMocks
     private PokemonController pokemonController;
 
-    private PokemonType fireType;
-    private PokemonType waterType;
-    private Pokemon charmander;
-    private Pokemon squirtle;
-    private List<Pokemon> pokemonList;
+    private TypeDTO fireTypeDto;
+    private TypeDTO waterTypeDto;
     private PokemonDTO charmanderDto;
     private PokemonDTO squirtleDto;
+    private List<PokemonDTO> pokemonDtoList;
 
     @BeforeEach
     void setUp() {
-        // Setup PokemonType test data
-        fireType = new PokemonType();
-        fireType.setId(1L);
-        fireType.setName(PokemonType.TypeName.FIRE);
-        fireType.setLightColor("#F08030");
-        fireType.setDarkColor("#D06010");
-
-        waterType = new PokemonType();
-        waterType.setId(2L);
-        waterType.setName(PokemonType.TypeName.WATER);
-        waterType.setLightColor("#6890F0");
-        waterType.setDarkColor("#4870D0");
-
-        // Setup Pokemon test data
-        charmander = new Pokemon();
-        charmander.setId(1L);
-        charmander.setName("charmander");
-        charmander.setPicture("https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/4.png");
-        charmander.setShinyPicture("https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/4.png");
-        charmander.setType(fireType);
-
-        squirtle = new Pokemon();
-        squirtle.setId(2L);
-        squirtle.setName("squirtle");
-        squirtle.setPicture("https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/7.png");
-        squirtle.setShinyPicture("https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/7.png");
-        squirtle.setType(waterType);
-
-        pokemonList = Arrays.asList(charmander, squirtle);
-
         // Setup DTO test data
+        fireTypeDto = new TypeDTO(1L, "FIRE");
+        waterTypeDto = new TypeDTO(2L, "WATER");
+        
         charmanderDto = new PokemonDTO(
                 1L,
                 "charmander",
                 "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/4.png",
                 "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/4.png",
-                1L
+                fireTypeDto
         );
 
         squirtleDto = new PokemonDTO(
@@ -89,19 +62,20 @@ class PokemonControllerTest {
                 "squirtle",
                 "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/7.png",
                 "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/7.png",
-                2L
+                waterTypeDto
         );
 
-        // Setup mapper mock behavior with lenient stubbing
-        lenient().when(pokemonMapper.toDto(charmander)).thenReturn(charmanderDto);
-        lenient().when(pokemonMapper.toDto(squirtle)).thenReturn(squirtleDto);
+        pokemonDtoList = Arrays.asList(charmanderDto, squirtleDto);
+
+        // Lenient default stub if needed
+        lenient().when(pokemonService.getAllPokemon(anyList())).thenReturn(pokemonDtoList);
     }
 
     @Test
     @DisplayName("Should return all Pokemon when no IDs provided and repository has data")
     void getAllPokemon_WhenNoIdsProvidedAndDataExists_ShouldReturnAllPokemon() {
         // Given
-        when(pokemonRepository.findAll()).thenReturn(pokemonList);
+        when(pokemonService.getAllPokemon(null)).thenReturn(pokemonDtoList);
 
         // When
         ResponseEntity<List<PokemonDTO>> response = pokemonController.getAllPokemon(null);
@@ -111,18 +85,15 @@ class PokemonControllerTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody()).hasSize(2);
         assertThat(response.getBody()).containsExactlyInAnyOrder(charmanderDto, squirtleDto);
-        
-        verify(pokemonRepository, times(1)).findAll();
-        verify(pokemonRepository, never()).findAllById(any());
-        verify(pokemonMapper, times(1)).toDto(charmander);
-        verify(pokemonMapper, times(1)).toDto(squirtle);
+
+        verify(pokemonService, times(1)).getAllPokemon(ArgumentMatchers.<List<Long>>isNull());
     }
 
     @Test
     @DisplayName("Should return all Pokemon when empty IDs list provided and repository has data")
     void getAllPokemon_WhenEmptyIdsListProvidedAndDataExists_ShouldReturnAllPokemon() {
         // Given
-        when(pokemonRepository.findAll()).thenReturn(pokemonList);
+        when(pokemonService.getAllPokemon(Collections.emptyList())).thenReturn(pokemonDtoList);
 
         // When
         ResponseEntity<List<PokemonDTO>> response = pokemonController.getAllPokemon(Collections.emptyList());
@@ -132,11 +103,8 @@ class PokemonControllerTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody()).hasSize(2);
         assertThat(response.getBody()).containsExactlyInAnyOrder(charmanderDto, squirtleDto);
-        
-        verify(pokemonRepository, times(1)).findAll();
-        verify(pokemonRepository, never()).findAllById(any());
-        verify(pokemonMapper, times(1)).toDto(charmander);
-        verify(pokemonMapper, times(1)).toDto(squirtle);
+
+        verify(pokemonService, times(1)).getAllPokemon(argThat(list -> list != null && list.isEmpty()));
     }
 
     @Test
@@ -144,7 +112,7 @@ class PokemonControllerTest {
     void getAllPokemon_WhenIdsProvidedAndDataExists_ShouldReturnSpecificPokemon() {
         // Given
         List<Long> requestedIds = Arrays.asList(1L, 2L);
-        when(pokemonRepository.findAllById(requestedIds)).thenReturn(pokemonList);
+        when(pokemonService.getAllPokemon(requestedIds)).thenReturn(pokemonDtoList);
 
         // When
         ResponseEntity<List<PokemonDTO>> response = pokemonController.getAllPokemon(requestedIds);
@@ -154,11 +122,8 @@ class PokemonControllerTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody()).hasSize(2);
         assertThat(response.getBody()).containsExactlyInAnyOrder(charmanderDto, squirtleDto);
-        
-        verify(pokemonRepository, never()).findAll();
-        verify(pokemonRepository, times(1)).findAllById(requestedIds);
-        verify(pokemonMapper, times(1)).toDto(charmander);
-        verify(pokemonMapper, times(1)).toDto(squirtle);
+
+        verify(pokemonService, times(1)).getAllPokemon(requestedIds);
     }
 
     @Test
@@ -166,8 +131,8 @@ class PokemonControllerTest {
     void getAllPokemon_WhenSingleIdProvided_ShouldReturnSinglePokemon() {
         // Given
         List<Long> requestedIds = Arrays.asList(1L);
-        List<Pokemon> singlePokemonList = Arrays.asList(charmander);
-        when(pokemonRepository.findAllById(requestedIds)).thenReturn(singlePokemonList);
+        List<PokemonDTO> singlePokemonDtoList = Arrays.asList(charmanderDto);
+        when(pokemonService.getAllPokemon(requestedIds)).thenReturn(singlePokemonDtoList);
 
         // When
         ResponseEntity<List<PokemonDTO>> response = pokemonController.getAllPokemon(requestedIds);
@@ -177,11 +142,8 @@ class PokemonControllerTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody()).hasSize(1);
         assertThat(response.getBody()).containsExactly(charmanderDto);
-        
-        verify(pokemonRepository, never()).findAll();
-        verify(pokemonRepository, times(1)).findAllById(requestedIds);
-        verify(pokemonMapper, times(1)).toDto(charmander);
-        verify(pokemonMapper, never()).toDto(squirtle);
+
+        verify(pokemonService, times(1)).getAllPokemon(requestedIds);
     }
 
     @Test
@@ -189,7 +151,7 @@ class PokemonControllerTest {
     void getAllPokemon_WhenIdsProvidedButNoMatchingPokemon_ShouldReturnEmptyList() {
         // Given
         List<Long> requestedIds = Arrays.asList(999L);
-        when(pokemonRepository.findAllById(requestedIds)).thenReturn(Collections.emptyList());
+        when(pokemonService.getAllPokemon(requestedIds)).thenReturn(Collections.emptyList());
 
         // When
         ResponseEntity<List<PokemonDTO>> response = pokemonController.getAllPokemon(requestedIds);
@@ -198,17 +160,15 @@ class PokemonControllerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody()).isEmpty();
-        
-        verify(pokemonRepository, never()).findAll();
-        verify(pokemonRepository, times(1)).findAllById(requestedIds);
-        verify(pokemonMapper, never()).toDto(any());
+
+        verify(pokemonService, times(1)).getAllPokemon(requestedIds);
     }
 
     @Test
     @DisplayName("Should return empty list when no IDs provided and repository has no data")
     void getAllPokemon_WhenNoIdsProvidedAndNoData_ShouldReturnEmptyList() {
         // Given
-        when(pokemonRepository.findAll()).thenReturn(Collections.emptyList());
+        when(pokemonService.getAllPokemon(null)).thenReturn(Collections.emptyList());
 
         // When
         ResponseEntity<List<PokemonDTO>> response = pokemonController.getAllPokemon(null);
@@ -217,10 +177,8 @@ class PokemonControllerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody()).isEmpty();
-        
-        verify(pokemonRepository, times(1)).findAll();
-        verify(pokemonRepository, never()).findAllById(any());
-        verify(pokemonMapper, never()).toDto(any());
+
+        verify(pokemonService, times(1)).getAllPokemon(ArgumentMatchers.<List<Long>>isNull());
     }
 
     @Test
@@ -228,7 +186,7 @@ class PokemonControllerTest {
     void getAllPokemon_WhenNoIdsProvidedAndRepositoryThrowsException_ShouldPropagateException() {
         // Given
         RuntimeException repositoryException = new RuntimeException("Database connection failed");
-        when(pokemonRepository.findAll()).thenThrow(repositoryException);
+        when(pokemonService.getAllPokemon(null)).thenThrow(repositoryException);
 
         // When & Then
         try {
@@ -237,9 +195,8 @@ class PokemonControllerTest {
             assertThat(e).isEqualTo(repositoryException);
             assertThat(e.getMessage()).isEqualTo("Database connection failed");
         }
-        
-        verify(pokemonRepository, times(1)).findAll();
-        verify(pokemonRepository, never()).findAllById(any());
+
+        verify(pokemonService, times(1)).getAllPokemon(ArgumentMatchers.<List<Long>>isNull());
     }
 
     @Test
@@ -248,7 +205,7 @@ class PokemonControllerTest {
         // Given
         List<Long> requestedIds = Arrays.asList(1L, 2L);
         RuntimeException repositoryException = new RuntimeException("Database connection failed");
-        when(pokemonRepository.findAllById(requestedIds)).thenThrow(repositoryException);
+        when(pokemonService.getAllPokemon(requestedIds)).thenThrow(repositoryException);
 
         // When & Then
         try {
@@ -257,9 +214,96 @@ class PokemonControllerTest {
             assertThat(e).isEqualTo(repositoryException);
             assertThat(e.getMessage()).isEqualTo("Database connection failed");
         }
-        
-        verify(pokemonRepository, never()).findAll();
-        verify(pokemonRepository, times(1)).findAllById(requestedIds);
+
+        verify(pokemonService, times(1)).getAllPokemon(requestedIds);
     }
 
+    @Test
+    @DisplayName("Should filter to id and name when fields=name")
+    void getAllPokemonWithSelectedFields_WhenFieldsName_ShouldReturnOnlyIdAndName() throws Exception {
+        // Given
+        when(pokemonService.getAllPokemon(null)).thenReturn(pokemonDtoList);
+
+        // When
+        ResponseEntity<MappingJacksonValue> response = pokemonController.getAllPokemonWithSelectedFields(null, Arrays.asList("name"));
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+
+        MappingJacksonValue wrapper = java.util.Objects.requireNonNull(response.getBody());
+
+        // Serialize applying filters to assert actual JSON output contains only expected fields
+        com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        objectMapper.setFilterProvider(wrapper.getFilters());
+        String json = objectMapper.writeValueAsString(wrapper.getValue());
+
+        com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(json);
+        assertThat(root.isArray()).isTrue();
+        assertThat(root.size()).isEqualTo(2);
+
+        com.fasterxml.jackson.databind.JsonNode first = root.get(0);
+        assertThat(first.has("id")).isTrue();
+        assertThat(first.has("name")).isTrue();
+        assertThat(first.has("picture")).isFalse();
+        assertThat(first.has("shinyPicture")).isFalse();
+        assertThat(first.has("type")).isFalse();
+    }
+
+    @Test
+    @DisplayName("Should include id only when fields is empty and ids filter provided")
+    void getAllPokemonWithSelectedFields_WhenFieldsEmptyAndIdsProvided_ShouldReturnOnlyId() throws Exception {
+        // Given
+        List<Long> requestedIds = Arrays.asList(1L);
+        List<PokemonDTO> single = Arrays.asList(charmanderDto);
+        when(pokemonService.getAllPokemon(requestedIds)).thenReturn(single);
+
+        // When
+        ResponseEntity<MappingJacksonValue> response = pokemonController.getAllPokemonWithSelectedFields(requestedIds, Collections.emptyList());
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+
+        MappingJacksonValue wrapper = java.util.Objects.requireNonNull(response.getBody());
+        com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        objectMapper.setFilterProvider(wrapper.getFilters());
+        String json = objectMapper.writeValueAsString(wrapper.getValue());
+
+        com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(json);
+        assertThat(root.isArray()).isTrue();
+        assertThat(root.size()).isEqualTo(1);
+
+        com.fasterxml.jackson.databind.JsonNode first = root.get(0);
+        assertThat(first.has("id")).isTrue();
+        assertThat(first.size()).isEqualTo(1); // only id present
+    }
+
+    @Test
+    @DisplayName("Should trim, deduplicate, and always include id")
+    void getAllPokemonWithSelectedFields_WhenFieldsContainBlanksAndDuplicates_ShouldTrimDedupAndIncludeId() throws Exception {
+        // Given
+        when(pokemonService.getAllPokemon(null)).thenReturn(pokemonDtoList);
+
+        // When
+        ResponseEntity<MappingJacksonValue> response = pokemonController.getAllPokemonWithSelectedFields(null, Arrays.asList(" ", "name", "name", "  picture  "));
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+
+        MappingJacksonValue wrapper = java.util.Objects.requireNonNull(response.getBody());
+        com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        objectMapper.setFilterProvider(wrapper.getFilters());
+        String json = objectMapper.writeValueAsString(wrapper.getValue());
+
+        com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(json);
+        com.fasterxml.jackson.databind.JsonNode first = root.get(0);
+
+        assertThat(first.has("id")).isTrue();
+        assertThat(first.has("name")).isTrue();
+        assertThat(first.has("picture")).isTrue();
+        assertThat(first.has("shinyPicture")).isFalse();
+        assertThat(first.has("type")).isFalse();
+    }
 }

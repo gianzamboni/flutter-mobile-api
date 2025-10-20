@@ -27,8 +27,4 @@ public class Pokemon {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "type_id", nullable = false)
     private PokemonType type;
-    
-    public void setName(String name) {
-        this.name = name != null ? name.toLowerCase() : null;
-    }
 }

@@ -10,6 +10,9 @@ services:
       - DB_URL=${DATABASE_URL}
       - DB_USERNAME=${DB_USERNAME:-postgres}
       - DB_PASSWORD=${DB_PASSWORD}
+      # JWT Configuration
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION=${JWT_EXPIRATION}
       # Optional: Add other environment variables as needed
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-production}
     restart: always
@@ -20,3 +23,12 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s 
+    # Development mode configuration (only active when using --watch)
+    develop:
+      watch:
+        - action: rebuild
+          path: ./src
+        - action: rebuild
+          path: ./pom.xml
+        - action: rebuild
+          path: ./Dockerfile

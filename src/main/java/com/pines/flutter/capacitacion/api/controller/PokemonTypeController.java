@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/pokemon-types")
+@RequestMapping("/api/pokemon-types")
 @AllArgsConstructor
 @Tag(name = "Pokemon Types")
 public class PokemonTypeController {
